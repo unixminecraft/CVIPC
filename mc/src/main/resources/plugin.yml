@@ -1,0 +1,14 @@
+name: CVIPC
+main: org.cubeville.cvipc.CVIPC
+authors: [FrediW]
+version: 0.1
+
+commands:
+  pcmd:
+    description: Proxy command dispatcher
+    permission: cvipc.dispatch.proxycmd
+
+permissions:
+  cvchat.dispatcher:
+    description: Permission to use the proxy command dispatcher
+    default: op

@@ -1,0 +1,121 @@
+package org.cubeville.cvipc;
+
+import java.io.IOException;
+import java.io.File;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.config.Configuration;
+import net.md_5.bungee.config.ConfigurationProvider;
+import net.md_5.bungee.config.YamlConfiguration;
+
+public class CVIPC extends Plugin {
+    Map<String, IPCServer> ipcServers;
+    Map<String, IPCInterface> ipcInterfaces;
+
+    ProxyServer server;
+    
+    private static CVIPC instance;
+    public static CVIPC getInstance() {
+        return instance;
+    }
+
+    public void onEnable() {
+        instance = this;
+        server = ProxyServer.getInstance();
+
+        ipcServers = new HashMap<>();
+        ipcInterfaces = new HashMap<>();
+
+        try {
+            File configFile = new File(getDataFolder(), "config.yml");
+            Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(configFile);
+            Configuration ipcList = (Configuration) config.get("ipc");
+            Collection<String> servers = ipcList.getKeys();
+            for(String server: servers) {
+                Configuration sc = (Configuration) ipcList.get(server);
+                int port = ((Configuration) ipcList.get(server)).getInt("port");
+                ipcServers.put(server, new IPCServer(this, server, port));
+            }
+
+            getProxy().getPluginManager().registerCommand(this, new ScmdCommand());
+        }
+        catch (IOException e) {
+            System.out.println("Unable to load config.yml, no IPC available.");
+        }
+    }
+
+    public void onDisable() {
+        for(String s: ipcServers.keySet()) {
+            ipcServers.get(s).stop();
+        }
+        instance = null;
+    }
+    
+    public void sendMessage(String server, String message) {
+        IPCServer ipcServer = ipcServers.get(server);
+        if(ipcServer == null) throw new IllegalArgumentException("Server " + server + " is not registerd.");
+        ipcServer.send(message);
+    }
+
+    public void registerIPCInterface(String channel, IPCInterface ipcInterface) {
+        ipcInterfaces.put(channel, ipcInterface);
+    }
+
+    public void deregisterIPCInterface(String channel) {
+        ipcInterfaces.remove(channel);
+    }
+
+    protected void processRemoteMessage(String message) {
+        if(message.indexOf("|") == -1) return;
+
+        String channel = getPart(message);
+        message = getRest(message);
+
+        if(channel.equals("cmd")) { // Built-in command dispatcher channel
+            String player = getPart(message);
+            message = getRest(message);
+            CommandSender sender;
+            if(player.equals("console")) sender = server.getConsole();
+            else sender = server.getPlayer(UUID.fromString(player));
+            if(sender != null) server.getPluginManager().dispatchCommand(sender, message);
+        }
+        else if(channel.equals("fwd")) { // Built-in command forwarder channel
+            String server = getPart(message);
+            message = getRest(message);
+            sendMessage(server, message);
+        }
+        else if(channel.equals("server")) { // Built-in move-player-to-server
+            UUID playerId = UUID.fromString(getPart(message));
+            String serverName = getRest(message);
+            System.out.println("Connect player " + playerId.toString() + " to server " + serverName);
+            ProxiedPlayer player = server.getPlayer(playerId);
+            if(player == null) return;
+            ServerInfo serverInfo = server.getServerInfo(serverName);
+            if(serverInfo == null) return;
+            player.connect(serverInfo);
+        }
+        else {
+            IPCInterface i = ipcInterfaces.get(channel);
+            if (i != null) i.process(message);
+        }
+    }
+
+    private String getPart(String m) {
+        if(m.indexOf("|") == -1) return "";
+        return m.substring(0, m.indexOf("|"));
+    }
+
+    private String getRest(String m) {
+        if(m.indexOf("|") == -1) return m;
+        return m.substring(m.indexOf("|") + 1);
+    }
+}
