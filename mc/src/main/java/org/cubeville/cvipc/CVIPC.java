@@ -30,7 +30,6 @@ public class CVIPC extends JavaPlugin
                 if(pcmd.length() > 0) pcmd += " ";
                 pcmd += args[i];
             }
-            System.out.println("Sending IPC message " + pcmd);
             sendMessage("cmd|console|" + pcmd);
         }
         return false;
@@ -41,6 +40,10 @@ public class CVIPC extends JavaPlugin
         ipcClient.send(message);
     }
 
+    public void sendMessage(String channel, String message) {
+        if(ipcClient == null) return;
+        ipcClient.send(channel + "|" + message);
+    }
     public void registerInterface(String channel, IPCInterface ipcInterface) {
         ipcInterfaces.put(channel, ipcInterface);
     }
@@ -65,7 +68,7 @@ public class CVIPC extends JavaPlugin
         }
         else {
             IPCInterface i = ipcInterfaces.get(channel);
-            if (i != null) i.process(message);
+            if (i != null) i.process(channel, message);
         }
     }
 

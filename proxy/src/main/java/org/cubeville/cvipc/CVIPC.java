@@ -66,15 +66,15 @@ public class CVIPC extends Plugin {
         ipcServer.send(message);
     }
 
-    public void registerIPCInterface(String channel, IPCInterface ipcInterface) {
+    public void registerInterface(String channel, IPCInterface ipcInterface) {
         ipcInterfaces.put(channel, ipcInterface);
     }
 
-    public void deregisterIPCInterface(String channel) {
+    public void deregisterInterface(String channel) {
         ipcInterfaces.remove(channel);
     }
 
-    protected void processRemoteMessage(String message) {
+    protected void processRemoteMessage(String serverName, String message) {
         if(message.indexOf("|") == -1) return;
 
         String channel = getPart(message);
@@ -95,17 +95,16 @@ public class CVIPC extends Plugin {
         }
         else if(channel.equals("server")) { // Built-in move-player-to-server
             UUID playerId = UUID.fromString(getPart(message));
-            String serverName = getRest(message);
-            System.out.println("Connect player " + playerId.toString() + " to server " + serverName);
+            String targetServer = getRest(message);
             ProxiedPlayer player = server.getPlayer(playerId);
             if(player == null) return;
-            ServerInfo serverInfo = server.getServerInfo(serverName);
+            ServerInfo serverInfo = server.getServerInfo(targetServer);
             if(serverInfo == null) return;
             player.connect(serverInfo);
         }
         else {
             IPCInterface i = ipcInterfaces.get(channel);
-            if (i != null) i.process(message);
+            if (i != null) i.process(serverName, channel, message);
         }
     }
 

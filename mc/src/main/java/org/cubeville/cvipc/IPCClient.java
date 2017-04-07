@@ -54,7 +54,6 @@ public class IPCClient implements Runnable
     private synchronized void doSend(String message) {
         if(outstream == null) return;
         try {
-            System.out.println("IPC send message " + message);
             outstream.writeUTF(message);
         }
         catch(IOException e) {}

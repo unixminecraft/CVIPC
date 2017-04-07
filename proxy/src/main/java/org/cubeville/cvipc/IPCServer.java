@@ -28,6 +28,7 @@ public class IPCServer implements Runnable
     public IPCServer(CVIPC plugin, String serverName, int port) {
         this.port = port;
         this.plugin = plugin;
+        this.serverName = serverName;
         cancelled = false;
         ProxyServer.getInstance().getScheduler().runAsync(plugin, this);
     }
@@ -56,7 +57,7 @@ public class IPCServer implements Runnable
                     String rd = in.readUTF();
                     ProxyServer.getInstance().getScheduler().runAsync(plugin, new Runnable() {
                             public void run() {
-                                plugin.processRemoteMessage(rd);
+                                plugin.processRemoteMessage(serverName, rd);
                             }
                         });
                 }
