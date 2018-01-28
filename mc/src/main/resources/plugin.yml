@@ -7,8 +7,16 @@ commands:
   pcmd:
     description: Proxy command dispatcher
     permission: cvipc.dispatch.proxycmd
+  reconnect:
+    description: Reconnect IPC to proxy server
+    permission: cvipc.reconnect
 
 permissions:
   cvchat.dispatcher:
     description: Permission to use the proxy command dispatcher
     default: op
+
+  cvipc.reconnect:
+    description: Permission to call reconnect
+    default: op
+    

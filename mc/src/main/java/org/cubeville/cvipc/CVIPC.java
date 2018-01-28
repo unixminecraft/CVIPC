@@ -32,6 +32,9 @@ public class CVIPC extends JavaPlugin
             }
             sendMessage("cmd|console|" + pcmd);
         }
+        else if(label.equals("reconnect")) {
+            ipcClient.reconnect();
+        }
         return false;
     }
 
@@ -44,6 +47,7 @@ public class CVIPC extends JavaPlugin
         if(ipcClient == null) return;
         ipcClient.send(channel + "|" + message);
     }
+
     public void registerInterface(String channel, IPCInterface ipcInterface) {
         ipcInterfaces.put(channel, ipcInterface);
     }
@@ -51,7 +55,7 @@ public class CVIPC extends JavaPlugin
     public void deregisterInterface(String channel) {
         ipcInterfaces.remove(channel);
     }
-    
+
     public void processRemoteMessage(String message) {
         if(message.indexOf("|") == -1) return;
 
