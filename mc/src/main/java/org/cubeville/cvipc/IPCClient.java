@@ -1,9 +1,10 @@
 package org.cubeville.cvipc;
-
+ 
 import java.io.IOException;
 import java.net.Socket;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IPCClient implements Runnable
 {
@@ -12,15 +13,18 @@ public class IPCClient implements Runnable
     Socket socket;
     DataOutputStream outstream;
     boolean connected;
+    AtomicBoolean active;
     
     public IPCClient(CVIPC plugin, int port) {
         this.port = port;
         this.plugin = plugin;
         connected = false;
+        active = new AtomicBoolean(true);
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this);
     }
 
     public void stop() {
+        active.set(false);
         try { socket.close(); } catch (Exception e) {}
         connected = false;
     }
@@ -48,16 +52,12 @@ public class IPCClient implements Runnable
             try { instream.close(); } catch (Exception ed) {}
             try { socket.close(); } catch (Exception ed) {}
             connected = false;
-            plugin.getServer().getScheduler(). runTaskLaterAsynchronously(plugin, this, 40);
+            if(active.get()) {
+                plugin.getServer().getScheduler(). runTaskLaterAsynchronously(plugin, this, 40);
+            }
         }
     }
 
-    public void reconnect() {
-        if(!connected) {
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this);
-        }
-    }
-    
     public void send(String message) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
                 public void run() {
